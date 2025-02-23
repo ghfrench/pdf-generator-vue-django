@@ -2,9 +2,6 @@
 import { onMounted } from 'vue';
 import { useAuthStore } from '../store/auth.js';
 import { useRouter } from 'vue-router';
-import PdfGenerator from '../components/PdfGenerator.vue';
-import { Button } from '../components/ui/button/index.js';
-import { Code } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -23,15 +20,11 @@ async function logout() {
 </script>
 
 <template>
-	<div v-if="authStore.isAuthenticated" class="h-screen flex flex-col">
-		<header class="bg-black text-white flex items-center justify-between px-4 py-2 h-14 gap-x-4">
-			<Code />
-			<span class="font-bold text-xl">PDF Generator</span>
-			<Button @click="logout">
-				Logout
-			</Button>
-		</header>
-		<PdfGenerator />
+	<h1>Welcome to the home page</h1>
+	<div v-if="authStore.isAuthenticated">
+		<p>Hi there {{ authStore.user?.username }}!</p>
+		<p>You are logged in.</p>
+		<button @click="logout">Logout</button>
 	</div>
 	<p v-else>
 		You are not logged in.
