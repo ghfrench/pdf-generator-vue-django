@@ -153,16 +153,6 @@ export const useAuthStore = defineStore('auth', {
 			this.saveState();
 		},
 
-		async downloadFile(pdfId: number) {
-			try {
-				console.log('trying');
-				const response = await axios.get(`http://localhost:8000/api/download/${pdfId}/`);
-			} catch (error) {
-				console.error('Failed to download file', error);
-			}
-			this.saveState();
-		},
-
 		saveState() {
 			/*
 				  We save state to local storage to keep the

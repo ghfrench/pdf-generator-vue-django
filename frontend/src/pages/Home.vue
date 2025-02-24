@@ -5,6 +5,14 @@ import { useRouter } from 'vue-router';
 import PdfGenerator from '../components/PdfGenerator.vue';
 import { Button } from '../components/ui/button/index.js';
 import { Code, FileDiff, LogOut } from 'lucide-vue-next';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -18,8 +26,6 @@ onMounted(async () => {
 		await authStore.fetchFiles();
 	}
 });
-
-console.log(authStore.pdfList);
 
 async function logout() {
 	try {
@@ -48,7 +54,24 @@ function downloadPDF(pdfId: number) {
 			</div>
 			<span class="flex-1 font-bold text-xl text-center">PDF Generator</span>
 			<div class="flex-1 space-x-4 text-right">
-
+				<DropdownMenu>
+					<DropdownMenuTrigger as-child>
+						<Button variant="outline">
+							PDF List
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent class="w-56">
+						<DropdownMenuSeparator />
+						<DropdownMenuGroup>
+							<DropdownMenuItem v-for="pdf in authStore.pdfList" :key="pdf.id">
+								<div>
+									<button @click="downloadPDF(pdf.id)"><a :href="pdf.file" target="_blank">{{ pdf.file
+									}}</a></button>
+								</div>
+							</DropdownMenuItem>
+						</DropdownMenuGroup>
+					</DropdownMenuContent>
+				</DropdownMenu>
 				<Button>
 					<FileDiff />
 					<router-link to="/editor">Template Editor</router-link>
@@ -59,15 +82,6 @@ function downloadPDF(pdfId: number) {
 				</Button>
 			</div>
 		</header>
-		<!-- <div v-for="pdf in authStore.pdfList">
-			<Button @click="authStore.downloadFile(pdf.id)">{{ pdf.file }}</Button>
-		</div> -->
-		<ul>
-			<li v-for="pdf in authStore.pdfList" :key="pdf.id">
-				<a :href="pdf.file" target="_blank">{{ pdf.file }}</a>
-				<button @click="downloadPDF(pdf.id)">Download</button>
-			</li>
-		</ul>
 		<PdfGenerator />
 	</div>
 </template>
