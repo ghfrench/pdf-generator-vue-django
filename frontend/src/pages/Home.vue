@@ -4,15 +4,8 @@ import { useAuthStore } from '../store/auth.js';
 import { useRouter } from 'vue-router';
 import PdfGenerator from '../components/PdfGenerator.vue';
 import { Button } from '../components/ui/button/index.js';
-import { Code, FileDiff, LogOut } from 'lucide-vue-next';
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Code, FileDiff, LogOut, Files } from 'lucide-vue-next';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger, } from '@/components/ui/dropdown-menu';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -57,11 +50,11 @@ function downloadPDF(pdfId: number) {
 				<DropdownMenu>
 					<DropdownMenuTrigger as-child>
 						<Button variant="outline">
+							<Files />
 							PDF List
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent class="w-56">
-						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<DropdownMenuItem v-for="pdf in authStore.pdfList" :key="pdf.id">
 								<div>

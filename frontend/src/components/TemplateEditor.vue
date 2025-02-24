@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { PDFDocument } from 'pdf-lib';
-import { FileDiff, Save, ScanEye, SquarePlus, ListPlus } from 'lucide-vue-next';
+import { FileDiff, Save, ScanEye, SquarePlus, ListPlus, Delete } from 'lucide-vue-next';
 import { templateBuilder } from '../utils/templateBuilder';
 import { type CustomTemplate, type RectangleElement, type TextElement } from '../types/types';
 import { useAuthStore } from '../store/auth';
@@ -60,6 +60,10 @@ function addRectangleElement() {
 		borderWidth: 0,
 	};
 	template.value.elements.push(newElement);
+}
+
+function removeElement(index: number) {
+	template.value.elements.splice(index, 1);
 }
 
 async function createPdf() {
@@ -132,7 +136,7 @@ async function saveTemplate() {
 				</div>
 			</CardHeader>
 			<CardContent class="flex-1 overflow-auto p-6">
-				<div v-for="element in template.elements">
+				<div v-for="(element, index) in template.elements">
 					<div v-for="property in Object.keys(element)" :key="property">
 						<div v-if="element.type === 'text' && property !== 'type'">
 							<Label>{{ property }}</Label>
@@ -163,6 +167,10 @@ async function saveTemplate() {
 							</div>
 						</div>
 					</div>
+					<Button @click="removeElement(index)" class="mt-2">
+						<Delete />
+						Remove
+					</Button>
 					<div class="width-full h-px bg-neutral-200/50 my-8" />
 				</div>
 

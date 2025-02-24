@@ -3,7 +3,7 @@ import { onMounted } from 'vue';
 import { useAuthStore } from '../store/auth.js';
 import { useRouter } from 'vue-router';
 import { Button } from '../components/ui/button/index.js';
-import { Code, Factory, LogOut } from 'lucide-vue-next';
+import { Code, Delete, Factory, LogOut } from 'lucide-vue-next';
 import TemplateEditor from '../components/TemplateEditor.vue';
 
 const authStore = useAuthStore();
@@ -41,6 +41,7 @@ async function logout() {
 			<span class="font-bold text-xl">PDF Generator</span>
 			<div class="space-x-4">
 				<Button @click="clearTemplates">
+					<Delete />
 					Clear Templates
 				</Button>
 				<Button>
