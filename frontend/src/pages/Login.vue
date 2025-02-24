@@ -22,7 +22,7 @@ async function login() {
 		authStore.login(email.value, password.value, router);
 	if
 		(!authStore.isAuthenticated) {
-		error.value = 'Login failed. Please check your;credentials.';
+		error.value = 'Login failed. Please check your credentials.';
 	}
 }
 
