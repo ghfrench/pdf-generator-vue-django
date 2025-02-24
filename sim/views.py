@@ -7,6 +7,11 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 from .forms import CreateUserForm
+from .serializers import PDFSerializer
+from rest_framework.decorators import api_view
+from .models import PDF
+from rest_framework.response import Response
+from django.http import FileResponse, Http404
 
 @ensure_csrf_cookie
 @require_http_methods(['GET'])
@@ -60,3 +65,30 @@ def register(request):
     else:
         errors = form.errors.as_json()
         return JsonResponse({'error': errors}, status=400)
+
+
+@api_view(['POST'])
+def upload_pdf(request):
+    if request.method == 'POST':
+        serializer = PDFSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        return JsonResponse(serializer.errors, status=400)
+
+@api_view(['GET'])
+def list_pdfs(request):
+    if request.method == 'GET':
+        pdfs = PDF.objects.all()
+        serializer = PDFSerializer(pdfs, many=True)
+        return Response(serializer.data)
+
+@api_view(['GET'])
+def download_pdf(request, pdf_id):
+    try:
+        pdf = PDF.objects.get(id=pdf_id)
+        response = FileResponse(pdf.file.open(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{pdf.file.name}"'
+        return response
+    except PDF.DoesNotExist:
+        raise Http404("PDF not found")

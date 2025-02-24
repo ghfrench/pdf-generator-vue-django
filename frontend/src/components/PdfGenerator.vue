@@ -6,15 +6,22 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { PDFDocument } from 'pdf-lib';
-import { Download, FileText, ScanEye, Upload } from 'lucide-vue-next';
+import { Download, Factory, ScanEye, Upload } from 'lucide-vue-next';
 import RequiredTag from './RequiredTag.vue';
 import ErrorMessage from './ErrorMessage.vue';
-import templates, { type TemplateKey } from '../configs/pdfTemplates';
+import { useAuthStore } from '../store/auth';
+import staticTemplates from '../configs/staticTemplates';
+import { templateBuilder } from '../utils/templateBuilder';
+
+const authStore = useAuthStore();
 
 const name = ref('');
 const company = ref('');
 const title = ref('');
-const template = ref<TemplateKey>(Object.keys(templates)[0]);
+const selectedTemplateId = ref<number | null>(null);
+defineExpose({
+	selectedTemplateId // Expose the ref itself
+});
 const pdfInfo = ref('');
 
 const errors = ref({
@@ -31,9 +38,6 @@ function validateFields() {
 	if (!name.value) {
 		errors.value.name = 'Name is required';
 		valid = false;
-	} else if (name.value.length < 3) {
-		errors.value.name = 'Name must be at least 3 characters';
-		valid = false;
 	} else {
 		errors.value.name = '';
 	}
@@ -41,9 +45,6 @@ function validateFields() {
 	// Validate Company
 	if (!company.value) {
 		errors.value.company = 'Company is required';
-		valid = false;
-	} else if (company.value.length < 3) {
-		errors.value.company = 'Company must be at least 3 characters';
 		valid = false;
 	} else {
 		errors.value.company = '';
@@ -53,19 +54,13 @@ function validateFields() {
 	if (!title.value) {
 		errors.value.title = 'Title is required';
 		valid = false;
-	} else if (title.value.length < 3) {
-		errors.value.title = 'Title must be at least 3 characters';
-		valid = false;
 	} else {
 		errors.value.title = '';
 	}
 
 	// Validate Template
-	if (!template.value) {
+	if (!selectedTemplateId.value) {
 		errors.value.template = 'Template is required';
-		valid = false;
-	} else if (template.value.length < 3) {
-		errors.value.template = 'Template must be at least 3 characters';
 		valid = false;
 	} else {
 		errors.value.template = '';
@@ -77,9 +72,19 @@ function validateFields() {
 async function createPdf() {
 	const pdfDoc = await PDFDocument.create();
 	const page = pdfDoc.addPage([612, 792]);
-	const applyTemplate = templates[template.value];
 
-	await applyTemplate(page, { name: name.value, company: company.value, title: title.value });
+	if (typeof selectedTemplateId.value === 'number' && selectedTemplateId.value < 0) {
+		const applyTemplate = staticTemplates.find((staticTemplate: any) => staticTemplate.id === selectedTemplateId.value)?.applyTemplate;
+		if (applyTemplate) {
+			await applyTemplate(page, { name: name.value, company: company.value, title: title.value });
+		}
+	} else {
+		const elements = authStore.templates.find((template: any) => template.id === selectedTemplateId.value)?.elements;
+
+		if (elements) {
+			await templateBuilder(page, elements, { name: name.value, company: company.value, title: title.value });
+		}
+	}
 
 	const pdfBytes = await pdfDoc.save();
 
@@ -128,12 +133,9 @@ async function uploadPdf() {
 
 	const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 	const formData = new FormData();
-	formData.append("file", blob, `${title || "document"}.pdf`);
+	formData.append("file", blob, `${title.value || "document"}.pdf`);
 
-	await fetch("/api/upload", {
-		method: "POST",
-		body: formData,
-	});
+	await authStore.uploadFile(formData);
 };
 </script>
 
@@ -142,7 +144,7 @@ async function uploadPdf() {
 		<Card class="w-2xl h-max" data-test="pdf-generator-card">
 			<CardHeader data-test="pdf-generator-card-header">
 				<CardTitle class="flex items-center gap-x-2" data-test="pdf-generator-card-title">
-					<FileText />
+					<Factory />
 					PDF Generator
 				</CardTitle>
 			</CardHeader>
@@ -152,7 +154,7 @@ async function uploadPdf() {
 						Name
 						<RequiredTag />
 					</Label>
-					<Input placeholder="Name" v-model="name" />
+					<Input placeholder="Name" v-model="name" data-test="name-input" />
 					<ErrorMessage :message="errors.name" />
 				</div>
 				<div class="flex flex-col space-y-1.5">
@@ -160,7 +162,7 @@ async function uploadPdf() {
 						Company
 						<RequiredTag />
 					</Label>
-					<Input placeholder="Company" maxlength="30" v-model="company" />
+					<Input placeholder="Company" maxlength="30" v-model="company" data-test="company-input" />
 					<ErrorMessage :message="errors.company" />
 				</div>
 				<div class="flex flex-col space-y-1.5">
@@ -168,7 +170,7 @@ async function uploadPdf() {
 						Document Title
 						<RequiredTag />
 					</Label>
-					<Input placeholder="Document Title" v-model="title" />
+					<Input placeholder="Document Title" v-model="title" data-test="title-input" />
 					<ErrorMessage :message="errors.title" />
 				</div>
 				<div class="flex flex-col space-y-1.5">
@@ -176,15 +178,19 @@ async function uploadPdf() {
 						Template
 						<RequiredTag />
 					</Label>
-					<Select v-model="template">
+					<Select v-model="selectedTemplateId">
 						<SelectTrigger class="!font-normal !text-base">
 							<SelectValue placeholder="Select a template" />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectGroup>
-								<SelectItem v-for="templateName in Object.keys(templates)" v-bind:value="templateName"
-									:key="templateName">
-									{{ templateName }}
+								<SelectItem v-for="staticTemplate in staticTemplates" :value="staticTemplate.id"
+									:key="staticTemplate.id">
+									{{ staticTemplate.name }}
+								</SelectItem>
+								<SelectItem v-for="templateObj in authStore.templates" :value="templateObj.id"
+									:key="templateObj.id">
+									{{ templateObj.name }}
 								</SelectItem>
 							</SelectGroup>
 						</SelectContent>
@@ -193,15 +199,15 @@ async function uploadPdf() {
 				</div>
 			</CardContent>
 			<CardFooter class="flex justify-between" data-test="pdf-generator-card-footer">
-				<Button @click="previewPdf">
+				<Button @click="previewPdf" data-test="preview-button">
 					<ScanEye />
 					Preview
 				</Button>
-				<Button @click="downloadPdf">
+				<Button @click="downloadPdf" data-test="download-button">
 					<Download />
 					Download
 				</Button>
-				<Button @click="uploadPdf">
+				<Button @click="uploadPdf" data-test="upload-button">
 					<Upload />
 					Upload
 				</Button>
